@@ -1,5 +1,5 @@
-﻿using System;
-using System.Data.SQLite;
+﻿using System.Data.SQLite;
+
 class Program
 {
     static void Main(string[] args)
@@ -50,6 +50,8 @@ class Program
         }   
     }
 
+    static Dictionary<int, int> pseudoIdMap = new Dictionary<int, int>();
+
     static void InitializeDatabase(string connectionString)
     {
         using (var db = new SQLiteConnection(connectionString))
@@ -89,6 +91,8 @@ class Program
 
     static void ViewHabits(string cs)
     {
+        pseudoIdMap.Clear();
+
         using (var connection = new SQLiteConnection(cs))
         {
             connection.Open();
@@ -98,14 +102,16 @@ class Program
             using (var reader = command.ExecuteReader())
             {
                 Console.WriteLine("Habits:");
+                int pseudoId = 1;
                 
                 while (reader.Read())
                 {
                     string name = reader["Name"].ToString();
                     string dateAdded = reader["DateAdded"].ToString();
                     int id = int.Parse(reader["ID"].ToString());
-                    Console.WriteLine($"- {id}: {name} (Added: {dateAdded})");
-
+                    pseudoIdMap[pseudoId] = id;
+                    Console.WriteLine($"{pseudoId}: {name} (Added: {dateAdded})");
+                    pseudoId++;
                     ShowCompletionDates(cs, id);
                 }
                 Console.WriteLine("");
@@ -164,7 +170,7 @@ class Program
         ViewHabits(connectionString);
 
         Console.Write("Enter the ID of the habit to mark as completed: ");
-        if (int.TryParse(Console.ReadLine(), out int habitId))
+        if (int.TryParse(Console.ReadLine(), out int pseudoId) && pseudoIdMap.TryGetValue(pseudoId, out int habitId))
         {
             using (var connection = new SQLiteConnection(connectionString))
             {
@@ -203,7 +209,7 @@ class Program
         ViewHabits(connectionString);
 
         Console.Write("Enter the ID of the habit to remove: ");
-        if (int.TryParse(Console.ReadLine(), out int habitId))
+        if (int.TryParse(Console.ReadLine(), out int pseudoId) && pseudoIdMap.TryGetValue(pseudoId, out int habitId))
         {
             using (var connection = new SQLiteConnection(connectionString))
             {
